@@ -1,0 +1,45 @@
+menu "Simple IoT Pin Configuration"
+
+    config I2C_MASTER_SCL
+        int "SCL GPIO Num"
+        default 0
+        help
+            GPIO number for I2C Master clock line.
+
+    config I2C_MASTER_SDA
+        int "SDA GPIO Num"
+        default 1
+        help
+            GPIO number for I2C Master data line.
+
+    config SPI_BUS_MOSI
+        int "MOSI GPIO Num"
+        default 7
+        help
+            GPIO number for SPI Bus MOSI line.
+
+    config SPI_BUS_SCLK
+        int "SCLK GPIO Num"
+        default 6
+        help
+            GPIO number for SPI Bus SCLK line.
+
+    config SSD1306_SPI_CS
+        int "SSD1306 CS GPIO Num"
+        default 10
+        help
+            GPIO number for SSD1306 SPI CS line.
+
+    config SSD1306_DC
+        int "SSD1306 DC GPIO Num"
+        default 5
+        help
+            GPIO number for SSD1306 Data/Command line.
+
+    config SSD1306_RESET
+        int "SSD1306 RES GPIO Num"
+        default 4
+        help
+            GPIO number for SSD1306 Reset line.
+
+endmenu

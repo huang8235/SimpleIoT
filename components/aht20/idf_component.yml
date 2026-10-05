@@ -1,0 +1,4 @@
+dependencies:
+  idf: '>=5.2'
+description: I2C driver for AHT20 humidity and temperature sensor
+version: 2.0.0
