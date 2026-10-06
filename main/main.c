@@ -21,10 +21,22 @@
 #define SSD1306_SPI_CS_IO   CONFIG_SSD1306_SPI_CS
 #define SSD1306_DC_IO       CONFIG_SSD1306_DC
 #define SSD1306_RESET_IO    CONFIG_SSD1306_RESET
+#define SSD1306_OLED_WIDTH  128
+#define SSD1306_OLED_HEIGHT 64
+
+#define OLED_TEXT_WIDTH 6
+#define OLED_TEXT_HEIGHT 8
 
 static const char *TAG = "SIMPLE_IoT_MAIN";
 
+typedef struct {
+    float temperature;
+    float humidity;
+} sensor_data_t;
+
 static i2c_master_bus_handle_t i2c_bus_handle;
+static volatile sensor_data_t sensor_data;
+static TaskHandle_t display_task_handle = NULL;
 
 static void i2c_master_init(void)
 {
@@ -58,8 +70,8 @@ static void ssd1306_init(ssd1306_handle_t *handle)
 {
     ssd1306_config_t cfg = {
         .bus    = SSD1306_SPI,
-        .width  = 128,
-        .height = 64,
+        .width  = SSD1306_OLED_WIDTH,
+        .height = SSD1306_OLED_HEIGHT,
         .iface.spi =
             {
                 .host     = SPI2_HOST,
@@ -121,6 +133,12 @@ static void ssd1306_draw_static(ssd1306_handle_t ssd1306)
     ESP_ERROR_CHECK(
         ssd1306_draw_text_scaled(ssd1306, 0, 20, "Humi: ", true, 2));
 
+    ESP_ERROR_CHECK(
+        ssd1306_draw_text_scaled(ssd1306,
+            SSD1306_OLED_WIDTH - OLED_TEXT_WIDTH * 4,
+            SSD1306_OLED_HEIGHT - OLED_TEXT_HEIGHT,
+            "V0.1", true, 1));
+
     // Update the display
     ESP_ERROR_CHECK(ssd1306_display(ssd1306));
 }
@@ -155,13 +173,29 @@ static void aht20_sensor_read(aht20_dev_handle_t aht20, float *temperature, floa
     ESP_LOGI(TAG, "%-20s: %.1f degC", "temperature is", *temperature);
 }
 
-static void update_display(ssd1306_handle_t ssd1306, aht20_dev_handle_t aht20)
+void sensor_task(void *pvParameters)
 {
+    aht20_dev_handle_t aht20 = (aht20_dev_handle_t)pvParameters;
     float temperature = 0;
     float humidity = 0;
 
-    aht20_sensor_read(aht20, &temperature, &humidity);
-    ssd1306_draw_dynamic(ssd1306, temperature, humidity);
+    for (;;) {
+        aht20_sensor_read(aht20, &temperature, &humidity);
+        sensor_data.temperature = temperature;
+        sensor_data.humidity = humidity;
+        xTaskNotifyGive(display_task_handle); // Notify the display task to update
+        vTaskDelay(pdMS_TO_TICKS(2000));      // Read every 2 seconds
+    }
+}
+
+void display_task(void *pvParameters)
+{
+    ssd1306_handle_t ssd1306 = (ssd1306_handle_t)pvParameters;
+
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // Wait for notification from sensor task
+        ssd1306_draw_dynamic(ssd1306, sensor_data.temperature, sensor_data.humidity);
+    }
 }
 
 void app_main(void)
@@ -177,8 +211,8 @@ void app_main(void)
 
     ssd1306_draw_static(ssd1306);
 
-    for (;;) {
-        update_display(ssd1306, aht20);
-        vTaskDelay(pdMS_TO_TICKS(2000)); // Update every 2 seconds
-    }
+    xTaskCreate(sensor_task, "sensor", 2048, aht20, 5, NULL);
+    xTaskCreate(display_task, "display", 2048, ssd1306, 5, &display_task_handle);
+
+    ESP_LOGI(TAG, "Initialization complete. System is running.");
 }
