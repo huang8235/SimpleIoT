@@ -8,7 +8,8 @@
 #include "esp_log.h"
 #include "ssd1306.h"
 #include "aht20.h"
-#include <stdio.h>
+#include "wifi_manager.h"
+#include "nvs_flash.h"
 
 #define I2C_MASTER_SCL_IO   CONFIG_I2C_MASTER_SCL   /*!< gpio number for I2C master clock */
 #define I2C_MASTER_SDA_IO   CONFIG_I2C_MASTER_SDA   /*!< gpio number for I2C master data  */
@@ -202,6 +203,15 @@ void app_main(void)
 {
     spi_bus_init();
     i2c_master_init();
+
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+      ESP_ERROR_CHECK(nvs_flash_erase());
+      ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
+    wifi_init_sta();
 
     ssd1306_handle_t ssd1306 = NULL;
     ssd1306_init(&ssd1306);
