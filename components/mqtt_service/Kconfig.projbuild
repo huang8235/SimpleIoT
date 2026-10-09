@@ -1,0 +1,27 @@
+menu "MQTT Service Configuration"
+
+    config BROKER_URL
+        string "Broker URL"
+        default "mqtt://test.mosquitto.org"
+        help
+            URL of the broker to connect to
+
+    config MQTT_CLIENT_ID
+        string "The MQTT Client ID"
+        default "ESP32_0"
+        help
+            the client id
+
+    config MQTT_USERNAME
+        string "The MQTT Username"
+        default "your_username"
+        help
+            the client id
+
+    config MQTT_PASSWORD
+        string "The MQTT PASSWORD"
+        default "your_password"
+        help
+            the password
+
+endmenu

@@ -8,8 +8,9 @@
 #include "esp_log.h"
 #include "ssd1306.h"
 #include "aht20.h"
-#include "wifi_manager.h"
 #include "nvs_flash.h"
+#include "wifi_manager.h"
+#include "mqtt_service.h"
 
 #define I2C_MASTER_SCL_IO   CONFIG_I2C_MASTER_SCL   /*!< gpio number for I2C master clock */
 #define I2C_MASTER_SDA_IO   CONFIG_I2C_MASTER_SDA   /*!< gpio number for I2C master data  */
@@ -38,6 +39,7 @@ typedef struct {
 static i2c_master_bus_handle_t i2c_bus_handle;
 static volatile sensor_data_t sensor_data;
 static TaskHandle_t display_task_handle = NULL;
+static TaskHandle_t cloud_task_handle = NULL;
 
 static void i2c_master_init(void)
 {
@@ -185,6 +187,7 @@ void sensor_task(void *pvParameters)
         sensor_data.temperature = temperature;
         sensor_data.humidity = humidity;
         xTaskNotifyGive(display_task_handle); // Notify the display task to update
+        xTaskNotifyGive(cloud_task_handle);   // Notify the cloud task to publish data
         vTaskDelay(pdMS_TO_TICKS(2000));      // Read every 2 seconds
     }
 }
@@ -196,6 +199,17 @@ void display_task(void *pvParameters)
     for (;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // Wait for notification from sensor task
         ssd1306_draw_dynamic(ssd1306, sensor_data.temperature, sensor_data.humidity);
+    }
+}
+
+void cloud_task(void *pvParameters)
+{
+    for (;;) {
+        char payload[64];
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        snprintf(payload, sizeof(payload), "{\"temperature\": %.1f, \"humidity\": %.1f}",
+                 sensor_data.temperature, sensor_data.humidity);
+        mqtt_service_publish("simpleiot/sensor/data", payload, 0);
     }
 }
 
@@ -212,6 +226,7 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
 
     wifi_init_sta();
+    mqtt_app_start();
 
     ssd1306_handle_t ssd1306 = NULL;
     ssd1306_init(&ssd1306);
@@ -223,6 +238,7 @@ void app_main(void)
 
     xTaskCreate(sensor_task, "sensor", 2048, aht20, 5, NULL);
     xTaskCreate(display_task, "display", 2048, ssd1306, 5, &display_task_handle);
+    xTaskCreate(cloud_task, "cloud", 2048, NULL, 5, &cloud_task_handle);
 
     ESP_LOGI(TAG, "Initialization complete. System is running.");
 }
