@@ -9,7 +9,7 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
-#include "wifi_manager.h"
+#include "wifi_service.h"
 
 #define EXAMPLE_ESP_WIFI_SSID      CONFIG_ESP_WIFI_SSID
 #define EXAMPLE_ESP_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
@@ -79,7 +79,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-void wifi_init_sta(void)
+void wifi_service_init(void)
 {
     s_wifi_event_group = xEventGroupCreate();
 
