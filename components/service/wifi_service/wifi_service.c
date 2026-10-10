@@ -9,7 +9,7 @@
 
 #include "lwip/err.h"
 #include "lwip/sys.h"
-#include "wifi_manager.h"
+#include "wifi_service.h"
 
 #define EXAMPLE_ESP_WIFI_SSID      CONFIG_ESP_WIFI_SSID
 #define EXAMPLE_ESP_WIFI_PASS      CONFIG_ESP_WIFI_PASSWORD
