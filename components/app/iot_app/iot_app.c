@@ -36,7 +36,8 @@ void sensor_task(void *pvParameters)
     float temperature = 0;
     float humidity = 0;
 
-    for (;;) {
+    for (;;)
+    {
         aht20_sensor_read(aht20, &temperature, &humidity);
         sensor_data.temperature = temperature;
         sensor_data.humidity = humidity;
@@ -50,7 +51,8 @@ void display_task(void *pvParameters)
 {
     ssd1306_handle_t ssd1306 = (ssd1306_handle_t)pvParameters;
 
-    for (;;) {
+    for (;;)
+    {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY); // Wait for notification from sensor task
         ui_draw_dynamic(ssd1306, sensor_data.temperature, sensor_data.humidity);
     }
@@ -58,9 +60,17 @@ void display_task(void *pvParameters)
 
 void cloud_task(void *pvParameters)
 {
-    for (;;) {
+    for (;;)
+    {
         char payload[64];
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        if (!mqtt_service_is_connected())
+        {
+            ESP_LOGD(TAG, "MQTT not connected, skipping publish");
+            continue;
+        }
+
         snprintf(payload, sizeof(payload), "{\"temperature\": %.1f, \"humidity\": %.1f}",
                  sensor_data.temperature, sensor_data.humidity);
         mqtt_service_publish("simpleiot/sensor/data", payload, 0);

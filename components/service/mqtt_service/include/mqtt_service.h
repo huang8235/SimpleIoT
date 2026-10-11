@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 void mqtt_service_init(void);
+bool mqtt_service_is_connected(void);
 void mqtt_service_publish(const char *topic, const char *data, int qos);
 void mqtt_service_publish_retain(const char *topic, const char *data, int qos);
 
