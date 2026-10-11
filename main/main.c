@@ -21,6 +21,9 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_netif_init());
+
     board_init();
     wifi_service_init();
     mqtt_service_init();

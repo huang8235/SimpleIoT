@@ -4,9 +4,10 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include "esp_system.h"
-
 #include "esp_log.h"
 #include "mqtt_client.h"
+
+#include "wifi_service.h"
 
 static const char *TAG = "mqtt_service";
 
@@ -78,6 +79,22 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     }
 }
 
+static wifi_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
+{
+    switch (event_id) {
+    case WIFI_SERVICE_EVENT_CONNECTED:
+        ESP_LOGI(TAG, "WI-FI connected, start mqtt client");
+        esp_mqtt_client_start(client);
+        break;
+    case WIFI_SERVICE_EVENT_DISCONNECTED:
+        ESP_LOGE(TAG, "WI-FI disconnected, stop mqtt client");
+        esp_mqtt_client_stop(client);
+        break;
+    default:
+        break;
+    }
+}
+
 void mqtt_service_init(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
@@ -90,7 +107,7 @@ void mqtt_service_init(void)
     client = esp_mqtt_client_init(&mqtt_cfg);
     /* The last argument may be used to pass data to the event handler, in this example mqtt_event_handler */
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
-    esp_mqtt_client_start(client);
+    esp_event_handler_register(WIFI_SERVICE_EVENT, ESP_EVENT_ANY_ID, wifi_event_handler, NULL);
 }
 
 void mqtt_service_publish(const char *topic, const char *data, int qos)
