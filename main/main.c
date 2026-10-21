@@ -8,6 +8,7 @@
 #include "nvs_flash.h"
 #include "wifi_service.h"
 #include "mqtt_service.h"
+#include "ota_service.h"
 #include "iot_board.h"
 #include "iot_app.h"
 
@@ -28,6 +29,7 @@ void app_main(void)
     board_init();
     wifi_service_init();
     mqtt_service_init();
+    ota_service_init();
     app_start();
 
     ESP_LOGI(TAG, "Initialization complete.");
